@@ -27,6 +27,7 @@ npm-debug.log*
 
 # Claude
 CLAUDE.md
+.claude/
 
 # Docs (personal PDFs, screenshots)
 docs/
