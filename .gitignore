@@ -24,3 +24,6 @@ npm-debug.log*
 # Cache
 .cache/
 *.tsbuildinfo
+
+# Claude
+CLAUDE.md
