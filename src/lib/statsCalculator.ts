@@ -1,9 +1,16 @@
 import { ClassData, Stats, TimeOfDayData } from '../types';
 import { determinePersonality } from './personalityTitles';
 
+// Get duration in minutes based on class type
+function getClassDuration(type: string): number {
+  if (type.includes('30')) return 30;
+  if (type.includes('65')) return 65;
+  return 50; // Default for Signature50, Focus50, Foundation50, Starter50, Advanced50
+}
+
 export function calculateStats(classes: ClassData[], year: number): Stats {
   const totalClasses = classes.length;
-  const totalMinutes = totalClasses * 50;
+  const totalMinutes = classes.reduce((sum, c) => sum + getClassDuration(c.type), 0);
 
   // Top instructors
   const instructorCounts = classes.reduce((acc, curr) => {

@@ -1,9 +1,17 @@
-export type ClassType = 'Signature50' | 'Focus50' | 'Foundation50' | 'Starter50';
+export type ClassType =
+  | 'Starter50'
+  | 'Foundation50'
+  | 'Signature50'
+  | 'Focus50'
+  | 'Power30'
+  | 'Advanced50'
+  | 'Advanced65';
 
 export interface ClassData {
   date: string;           // MM/DD/YYYY
   time: string;           // e.g., "4:30pm"
-  type: ClassType;
+  type: ClassType;        // Base type (e.g., "Signature50")
+  variant: string;        // Specific variant (e.g., "Full Body", "Core + Obliques + Lower Body")
   instructor: string;     // Normalized (e.g., "Nikki G.")
   location: string;       // Without state prefix
   rawDate: Date;          // For calculations

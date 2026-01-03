@@ -47,7 +47,7 @@ export async function parsePDF(
     if (classes.length > 0) {
       console.log('[SolidStats] Sample (first 3 classes):');
       classes.slice(0, 3).forEach((c, i) => {
-        console.log(`  ${i + 1}. ${c.date} | ${c.type} | ${c.instructor} | ${c.location} | ${c.time}`);
+        console.log(`  ${i + 1}. ${c.date} | ${c.type}: ${c.variant} | ${c.instructor} | ${c.location} | ${c.time}`);
       });
     }
 
@@ -83,21 +83,23 @@ function extractClasses(text: string): ClassData[] {
   }
 
   // Pattern to match class entries:
-  // Day Month, Year ... ClassType ... Location w/ Instructor ... Time (Duration)
+  // Day Month, Year ... ClassType: Variant ... Location w/ Instructor ... Time (Duration)
   // Example: "31 Wednesday December, 2025 PILATES Signature50: Full Body MA, Arsenal Yards w/ Jacqui Caefer 3:00pm (50 min)"
 
   // All US states where Solidcore has studios (31 states + DC)
   const statePattern = 'AL|AZ|CA|CO|CT|DC|DE|FL|GA|IL|IN|KY|MD|MA|MI|MN|NV|NJ|NY|NC|ND|OK|PA|RI|SD|TN|TX|UT|VA|WA|WI';
 
+  // All class types: Signature50, Focus50, Foundation50, Starter50, Power30, Advanced50, Advanced65
+  const classTypePattern = 'Signature50|Focus50|Foundation50|Starter50|Power30|Advanced50|Advanced65';
+
   // Pattern explanation:
   // - Day number + day of week + month + year
-  // - PILATES + class type (Signature50, Focus50, etc.)
-  // - Anything until state code
-  // - Location (until " w/ ")
+  // - PILATES + class type + colon + variant (may include playlist name after |)
+  // - State code + location (until " w/ ")
   // - Instructor name (until time)
   // - Time + duration
   const classPattern = new RegExp(
-    `(\\d{1,2})\\s+(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\\s+(January|February|March|April|May|June|July|August|September|October|November|December),?\\s*(\\d{4})\\s+PILATES\\s+(Signature50|Focus50|Foundation50|Starter50)[\\s\\S]*?(${statePattern}),\\s*(.+?)\\s+w\\/\\s*([A-Za-z][A-Za-z\\s\\-'.…]+?)\\s*(\\d{1,2}:\\d{2}(?:am|pm))\\s*\\((\\d+)\\s*min\\)`,
+    `(\\d{1,2})\\s+(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\\s+(January|February|March|April|May|June|July|August|September|October|November|December),?\\s*(\\d{4})\\s+PILATES\\s+(${classTypePattern}):\\s*(.+?)\\s+(${statePattern}),\\s*(.+?)\\s+w\\/\\s*([A-Za-z][A-Za-z\\s\\-'.…]+?)\\s*(\\d{1,2}:\\d{2}(?:am|pm))\\s*\\((\\d+)\\s*min\\)`,
     'gi'
   );
 
@@ -107,10 +109,11 @@ function extractClasses(text: string): ClassData[] {
     const monthStr = match[2];
     const year = parseInt(match[3], 10);
     const classType = normalizeClassType(match[4]);
-    // match[5] is state (MA/NY) - not currently used
-    const location = match[6].trim();
-    const instructor = normalizeInstructorName(match[7]);
-    const time = match[8].toLowerCase();
+    const variant = normalizeVariant(match[5]);
+    // match[6] is state (MA/NY/etc.) - not currently used
+    const location = match[7].trim();
+    const instructor = normalizeInstructorName(match[8]);
+    const time = match[9].toLowerCase();
 
     const month = getMonthIndex(monthStr);
     const rawDate = new Date(year, month, day);
@@ -122,6 +125,7 @@ function extractClasses(text: string): ClassData[] {
       date: formatDate(rawDate),
       time: time,
       type: classType,
+      variant: variant,
       instructor: instructor,
       location: location,
       rawDate: rawDate,
@@ -147,11 +151,22 @@ function getMonthIndex(monthStr: string): number {
 
 function normalizeClassType(type: string): ClassType {
   const lower = type.toLowerCase();
+  if (lower.includes('advanced65')) return 'Advanced65';
+  if (lower.includes('advanced50')) return 'Advanced50';
+  if (lower.includes('power30')) return 'Power30';
   if (lower.includes('signature')) return 'Signature50';
   if (lower.includes('focus')) return 'Focus50';
   if (lower.includes('foundation')) return 'Foundation50';
   if (lower.includes('starter')) return 'Starter50';
   return 'Signature50';
+}
+
+function normalizeVariant(variant: string): string {
+  return variant
+    .trim()
+    .replace(/\s+/g, ' ')           // Normalize whitespace
+    .replace(/\[solidcore\]/gi, '[solidcore]')  // Normalize brand name
+    .replace(/\s*\|.*$/, '');       // Remove anything after pipe (playlist names etc.)
 }
 
 function normalizeInstructorName(name: string): string {

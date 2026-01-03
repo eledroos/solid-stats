@@ -277,9 +277,12 @@ export function ResultsView({
               </thead>
               <tbody className="font-mono text-[10px] uppercase">
                 {classes.map((row, i) => (
-                  <tr key={i} className="border-b border-dashed border-gray-300 hover:bg-gray-50 transition-colors">
+                  <tr key={i} className="border-b border-dashed border-gray-300 hover:bg-gray-50 transition-colors group">
                     <td className="p-2 font-bold">{row.date.slice(0, 5)}</td>
-                    <td className="p-2 whitespace-nowrap">{row.type.replace('50', '')}</td>
+                    <td className="p-2 whitespace-nowrap" title={row.variant}>
+                      <span>{row.type.replace(/\d+$/, '')}</span>
+                      <span className="hidden group-hover:inline text-gray-400 text-[8px] ml-1">{row.variant}</span>
+                    </td>
                     <td className="p-2 truncate max-w-[80px]">{row.instructor}</td>
                     <td className="p-2 truncate max-w-[80px] text-right">{row.location}</td>
                   </tr>
