@@ -90,20 +90,20 @@ function App() {
     <div className="min-h-screen bg-[#F0F4F8] bg-dot-pattern text-black font-sans selection:bg-primary selection:text-white flex flex-col">
       {/* Navbar */}
       <nav className="border-b-4 border-black bg-white sticky top-0 z-40">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="font-black text-xl tracking-tighter flex items-center gap-2">
-            <div className="w-6 h-6 bg-primary border-2 border-black"></div>
+        <div className="max-w-7xl mx-auto px-4 lg:px-8 h-16 lg:h-20 flex items-center justify-between">
+          <div className="font-black text-xl lg:text-2xl tracking-tighter flex items-center gap-2 lg:gap-3">
+            <div className="w-6 h-6 lg:w-8 lg:h-8 bg-primary border-2 border-black"></div>
             SOLID.STATS
           </div>
-          <div className="flex gap-6">
-            <button onClick={() => setActiveModal('about')} className="font-bold hover:underline decoration-2 text-sm uppercase">About</button>
-            <button onClick={() => setActiveModal('privacy')} className="font-bold hover:underline decoration-2 text-sm uppercase">Privacy</button>
+          <div className="flex gap-6 lg:gap-8">
+            <button onClick={() => setActiveModal('about')} className="font-bold hover:underline decoration-2 text-sm lg:text-base uppercase">About</button>
+            <button onClick={() => setActiveModal('privacy')} className="font-bold hover:underline decoration-2 text-sm lg:text-base uppercase">Privacy</button>
           </div>
         </div>
       </nav>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 pt-8 flex-grow">
+      <main className="max-w-7xl mx-auto px-4 lg:px-8 pt-8 lg:pt-12 flex-grow">
         {view === 'landing' && (
           <LandingView
             onFileUpload={handleFileUpload}

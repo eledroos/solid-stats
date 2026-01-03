@@ -42,11 +42,11 @@ export function ResultsView({
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto pb-12 flex flex-col md:flex-row gap-8 items-start animate-fade-in-up">
+    <div className="w-full max-w-6xl mx-auto pb-12 flex flex-col lg:flex-row gap-8 lg:gap-12 items-start animate-fade-in-up">
       {/* LEFT COLUMN: The Visual "Wrapped" Card */}
-      <div className="w-full md:w-[420px] flex-shrink-0 mx-auto">
-        <div className="mb-4 flex justify-between items-center">
-          <h2 className="text-2xl font-black uppercase">Your Card</h2>
+      <div className="w-full lg:w-[420px] flex-shrink-0 mx-auto lg:mx-0">
+        <div className="mb-4 lg:mb-6 flex justify-between items-center">
+          <h2 className="text-2xl lg:text-3xl font-black uppercase">Your Card</h2>
           {availableYears.length > 1 && (
             <select
               value={selectedYear}
@@ -238,59 +238,63 @@ export function ResultsView({
 
       {/* RIGHT COLUMN: Interactive Dashboard / Table */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-3xl font-black italic uppercase">The<br/>Receipts</h2>
-          <BrutalButton variant="secondary" onClick={onReset} className="text-xs px-3 py-2">
+        <div className="flex items-center justify-between mb-6 lg:mb-8">
+          <h2 className="text-3xl lg:text-4xl font-black italic uppercase">The<br/>Receipts</h2>
+          <BrutalButton variant="secondary" onClick={onReset} className="text-xs lg:text-sm px-3 py-2 lg:px-4 lg:py-2">
             Reset
           </BrutalButton>
         </div>
 
         {/* Top Stat Cards */}
-        <div className="grid grid-cols-2 gap-4 mb-8">
+        <div className="grid grid-cols-2 gap-4 lg:gap-6 mb-8 lg:mb-10">
           <BrutalCard className="bg-primary-light">
-            <div className="text-xs font-bold uppercase opacity-60 mb-1">Top Studio</div>
-            <div className="text-xl font-black truncate leading-tight">{stats.topLocation}</div>
-            <div className="mt-3 text-[10px] font-bold border-t-2 border-black pt-2 inline-flex items-center gap-1">
-              <MapPin size={10}/> Most Visited
+            <div className="text-xs lg:text-sm font-bold uppercase opacity-60 mb-1">Top Studio</div>
+            <div className="text-xl lg:text-2xl font-black truncate leading-tight">{stats.topLocation}</div>
+            <div className="mt-3 text-[10px] lg:text-xs font-bold border-t-2 border-black pt-2 inline-flex items-center gap-1">
+              <MapPin size={12}/> Most Visited
             </div>
           </BrutalCard>
           <BrutalCard className="bg-red-300 !border-black">
-            <div className="text-xs font-bold uppercase opacity-60 mb-1">Longest Streak</div>
-            <div className="text-2xl font-black leading-tight">{stats.maxStreak} Days</div>
-            <div className="mt-3 text-[10px] font-bold border-t-2 border-black pt-2 inline-flex items-center gap-1">
-              <Flame size={10}/> Ouch
+            <div className="text-xs lg:text-sm font-bold uppercase opacity-60 mb-1">Longest Streak</div>
+            <div className="text-2xl lg:text-3xl font-black leading-tight">{stats.maxStreak} Days</div>
+            <div className="mt-3 text-[10px] lg:text-xs font-bold border-t-2 border-black pt-2 inline-flex items-center gap-1">
+              <Flame size={12}/> Ouch
             </div>
           </BrutalCard>
         </div>
 
         {/* Raw Data Receipt */}
         <ReceiptCard title="Transaction History">
-          <div className="overflow-x-auto max-h-[500px]">
+          <div className="overflow-x-auto max-h-[500px] lg:max-h-[600px]">
             <table className="w-full text-left border-collapse">
               <thead className="sticky top-0 z-10">
                 <tr className="border-b-4 border-dashed border-black">
-                  <th className="p-2 font-black uppercase text-[10px] bg-white">Date</th>
-                  <th className="p-2 font-black uppercase text-[10px] bg-white">Item</th>
-                  <th className="p-2 font-black uppercase text-[10px] bg-white">Coach</th>
-                  <th className="p-2 font-black uppercase text-[10px] bg-white text-right">Loc</th>
+                  <th className="p-2 lg:p-3 font-black uppercase text-[10px] lg:text-xs bg-white">Date</th>
+                  <th className="p-2 lg:p-3 font-black uppercase text-[10px] lg:text-xs bg-white">Item</th>
+                  <th className="p-2 lg:p-3 font-black uppercase text-[10px] lg:text-xs bg-white">Coach</th>
+                  <th className="p-2 lg:p-3 font-black uppercase text-[10px] lg:text-xs bg-white text-right">Loc</th>
                 </tr>
               </thead>
-              <tbody className="font-mono text-[10px] uppercase">
+              <tbody className="font-mono text-[10px] lg:text-xs uppercase">
                 {classes.map((row, i) => (
                   <tr key={i} className="border-b border-dashed border-gray-300 hover:bg-gray-50 transition-colors group">
-                    <td className="p-2 font-bold">{row.date.slice(0, 5)}</td>
-                    <td className="p-2 whitespace-nowrap" title={row.variant}>
-                      <span>{row.type.replace(/\d+$/, '')}</span>
-                      <span className="hidden group-hover:inline text-gray-400 text-[8px] ml-1">{row.variant}</span>
+                    <td className="p-2 lg:p-3 font-bold">{row.date.slice(0, 5)}</td>
+                    <td className="p-2 lg:p-3 whitespace-nowrap relative">
+                      <span title={row.variant} className="cursor-help border-b border-dotted border-gray-400">
+                        {row.type.replace(/\d+$/, '')}
+                      </span>
+                      <div className="absolute left-0 top-full mt-1 bg-black text-white text-[8px] lg:text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 whitespace-nowrap shadow-lg">
+                        {row.variant}
+                      </div>
                     </td>
-                    <td className="p-2 truncate max-w-[80px]">{row.instructor}</td>
-                    <td className="p-2 truncate max-w-[80px] text-right">{row.location}</td>
+                    <td className="p-2 lg:p-3 truncate max-w-[80px] lg:max-w-[120px]">{row.instructor}</td>
+                    <td className="p-2 lg:p-3 truncate max-w-[80px] lg:max-w-[120px] text-right">{row.location}</td>
                   </tr>
                 ))}
               </tbody>
               <tfoot className="border-t-4 border-dashed border-black">
                 <tr>
-                  <td colSpan={4} className="p-3 text-center text-[10px] font-bold">
+                  <td colSpan={4} className="p-3 lg:p-4 text-center text-[10px] lg:text-sm font-bold">
                     TOTAL ITEMS: {stats.totalClasses}
                   </td>
                 </tr>
