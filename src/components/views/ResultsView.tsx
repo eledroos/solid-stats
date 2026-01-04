@@ -81,7 +81,7 @@ export function ResultsView({
             ref={cardRef}
             data-share-card
             className="bg-[#F8FAFC] border-4 border-black overflow-hidden shadow-brutal-xl relative flex flex-col text-black group"
-            style={{ width: '420px', height: isCapturing ? '746px' : 'auto' }}
+            style={{ width: '420px' }}
           >
           {/* Header Section */}
           <div className="bg-black p-4 flex justify-between items-end border-b-4 border-black">
@@ -165,7 +165,7 @@ export function ResultsView({
           </div>
 
           {/* PIE CHART + CLASS TYPES - Side by side */}
-          <div className="grid grid-cols-2 border-b-4 border-black flex-grow">
+          <div className="grid grid-cols-2 border-b-4 border-black">
             {/* TIME OF DAY PIE CHART */}
             <div className="p-3 border-r-4 border-black flex flex-col items-center justify-start bg-white">
               <div className="text-[9px] font-black uppercase tracking-wider mb-2 self-start w-full border-b border-gray-100 pb-1 whitespace-nowrap">
@@ -211,8 +211,7 @@ export function ResultsView({
             </div>
           </div>
 
-          {/* MONTHLY GRAPH - Only shown in preview, hidden during capture to fit 9:16 */}
-          {!isCapturing && (
+          {/* MONTHLY GRAPH */}
             <div className="p-3 bg-white h-24 relative">
               <div className="text-[9px] font-black uppercase tracking-wider mb-1">
                 Consistency ({stats.year})
@@ -235,10 +234,9 @@ export function ResultsView({
                 })}
               </div>
             </div>
-          )}
 
           {/* FOOTER */}
-          <div className="p-2 bg-black text-white text-center flex flex-col gap-0.5 border-t-4 border-black mt-auto">
+          <div className="p-2 bg-black text-white text-center flex flex-col gap-0.5 border-t-4 border-black">
             <div className="text-[9px] font-bold uppercase tracking-widest">solidstats.bigdreams.info</div>
             <div className="text-[7px] text-gray-400 uppercase">
               Fan project. Not affiliated with Solidcore.
