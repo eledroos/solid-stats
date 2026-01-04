@@ -2,9 +2,13 @@
 
 An unofficial year-in-review stats generator for Solidcore workouts. Upload your Mindbody schedule export and get a shareable "Wrapped" style summary of your classes.
 
+<<<<<<< HEAD
 <p align="center">
   <img src="img/solidstats.png" alt="SolidStats Screenshot" width="300">
 </p>
+=======
+![SolidStats Screenshot](img/solidstats.png)
+>>>>>>> 9efefae963dab9b4579f53a28b62091494db1901
 
 ## Features
 
