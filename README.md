@@ -2,13 +2,20 @@
 
 An unofficial year-in-review stats generator for Solidcore workouts. Upload your Mindbody schedule export and get a shareable "Wrapped" style summary of your classes.
 
+<p align="center">
+  <img src="img/solidstats.png" alt="SolidStats Screenshot" width="300">
+</p>
+
 ## Features
 
 - Client-side PDF parsing (no data uploaded to servers)
-- Workout statistics: total classes, top coaches, longest streak, time-of-day breakdown
+- Workout statistics: total classes, minutes, top coaches, longest streak
+- Time-of-day breakdown and class format distribution
+- Monthly consistency graph
 - Personality titles based on workout patterns
-- Shareable stats card image export
+- Shareable stats card image export (9:16 for stories)
 - Multi-year support with year selector
+- Dark mode support
 
 ## Getting Started
 
@@ -53,7 +60,7 @@ Output is in the `dist/` directory.
 - Vite
 - Tailwind CSS
 - pdfjs-dist (PDF parsing)
-- html2canvas (image export)
+- modern-screenshot (image export)
 
 ## Privacy
 
