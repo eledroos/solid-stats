@@ -1,4 +1,4 @@
-import html2canvas from 'html2canvas';
+import { domToPng } from 'modern-screenshot';
 
 export async function captureAndShare(
   element: HTMLElement,
@@ -8,34 +8,31 @@ export async function captureAndShare(
   await document.fonts.ready;
 
   // Small delay to ensure rendering is complete
-  await new Promise(resolve => setTimeout(resolve, 100));
+  await new Promise(resolve => setTimeout(resolve, 200));
 
   try {
-    const canvas = await html2canvas(element, {
-      scale: 3,                    // High quality
-      useCORS: true,               // Handle external resources
-      allowTaint: false,
+    // Capture with modern-screenshot (better CSS support than html2canvas)
+    const dataUrl = await domToPng(element, {
+      scale: 3,
+      quality: 1,
       backgroundColor: '#F8FAFC',
-      logging: false,
-      // Use the element's actual dimensions
-      width: element.offsetWidth,
-      height: element.offsetHeight,
-      windowWidth: element.offsetWidth,
-      windowHeight: element.offsetHeight,
-      onclone: (clonedDoc) => {
-        // Fix any transform issues in the cloned document
-        const clonedElement = clonedDoc.body.querySelector('[data-share-card]');
-        if (clonedElement instanceof HTMLElement) {
-          clonedElement.style.transform = 'none';
-          clonedElement.style.overflow = 'visible';
+      style: {
+        // Ensure consistent rendering
+        transform: 'none',
+      },
+      filter: (node) => {
+        // Filter out any elements that shouldn't be in the export
+        if (node instanceof HTMLElement) {
+          // Skip elements with data-no-export attribute
+          if (node.dataset.noExport === 'true') return false;
         }
+        return true;
       }
     });
 
-    // Convert to blob
-    const blob = await new Promise<Blob | null>((resolve) => {
-      canvas.toBlob(resolve, 'image/png', 1.0);
-    });
+    // Convert data URL to blob
+    const response = await fetch(dataUrl);
+    const blob = await response.blob();
 
     if (!blob) {
       throw new Error('Failed to create image');

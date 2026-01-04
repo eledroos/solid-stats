@@ -10,18 +10,20 @@ interface PieChartProps {
 }
 
 export function PieChart({ data }: PieChartProps) {
-  let cumulativePercent = 0;
-
   const getCoordinatesForPercent = (percent: number): [number, number] => {
     const x = Math.cos(2 * Math.PI * percent);
     const y = Math.sin(2 * Math.PI * percent);
     return [x, y];
   };
 
-  const slices = data.map((slice, i) => {
-    const [startX, startY] = getCoordinatesForPercent(cumulativePercent);
-    cumulativePercent += slice.percent;
-    const [endX, endY] = getCoordinatesForPercent(cumulativePercent);
+  const slicesWithLabels: { path: JSX.Element; label: JSX.Element | null }[] = [];
+  let runningPercent = 0;
+
+  data.forEach((slice, i) => {
+    const startPercent = runningPercent;
+    const [startX, startY] = getCoordinatesForPercent(startPercent);
+    runningPercent += slice.percent;
+    const [endX, endY] = getCoordinatesForPercent(runningPercent);
     const largeArcFlag = slice.percent > 0.5 ? 1 : 0;
 
     const pathData = [
@@ -31,9 +33,9 @@ export function PieChart({ data }: PieChartProps) {
       `Z`
     ].join(' ');
 
-    return (
+    const path = (
       <path
-        key={i}
+        key={`path-${i}`}
         d={pathData}
         fill={slice.color}
         stroke="black"
@@ -41,12 +43,40 @@ export function PieChart({ data }: PieChartProps) {
         className="hover:opacity-80 transition-opacity cursor-pointer"
       />
     );
+
+    // Only show label if slice is large enough (>12%)
+    let label: JSX.Element | null = null;
+    if (slice.percent > 0.12) {
+      // Calculate label position at the midpoint of the slice
+      const midPercent = startPercent + slice.percent / 2;
+      const labelRadius = 0.6;
+      const labelX = Math.cos(2 * Math.PI * midPercent) * labelRadius;
+      const labelY = Math.sin(2 * Math.PI * midPercent) * labelRadius;
+
+      label = (
+        <text
+          key={`label-${i}`}
+          x={labelX}
+          y={labelY}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          transform={`rotate(90, ${labelX}, ${labelY})`}
+          className="fill-white font-black pointer-events-none"
+          style={{ fontSize: '0.22px' }}
+        >
+          {slice.value}
+        </text>
+      );
+    }
+
+    slicesWithLabels.push({ path, label });
   });
 
   return (
     <div className="relative w-24 h-24">
       <svg viewBox="-1.1 -1.1 2.2 2.2" className="transform -rotate-90 w-full h-full">
-        {slices}
+        {slicesWithLabels.map(s => s.path)}
+        {slicesWithLabels.map(s => s.label)}
       </svg>
     </div>
   );

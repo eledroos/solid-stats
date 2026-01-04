@@ -14,11 +14,11 @@ export function BrutalButton({
   disabled,
   ...props
 }: BrutalButtonProps) {
-  const baseStyles = "relative inline-flex items-center justify-center font-bold border-4 border-black transition-all active:translate-x-[2px] active:translate-y-[2px] active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed";
+  const baseStyles = "relative inline-flex items-center justify-center font-bold border-4 border-black dark:border-primary transition-all active:translate-x-[2px] active:translate-y-[2px] active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed";
 
   const variants = {
-    primary: "bg-primary text-white shadow-brutal hover:bg-primary-dark",
-    secondary: "bg-white text-black shadow-brutal hover:bg-gray-50",
+    primary: "bg-primary text-white shadow-brutal dark:shadow-brutal-dark hover:bg-primary-dark",
+    secondary: "bg-white dark:bg-slate-800 text-black dark:text-white shadow-brutal dark:shadow-brutal-dark hover:bg-gray-50 dark:hover:bg-slate-700",
   };
 
   return (

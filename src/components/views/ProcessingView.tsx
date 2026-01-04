@@ -8,9 +8,9 @@ export function ProcessingView({ progress }: ProcessingViewProps) {
       <h2 className="text-4xl font-black mb-8 uppercase text-center italic animate-pulse">
         Extracting<br/>Shakes...
       </h2>
-      <div className="w-full max-w-md h-16 border-4 border-black p-2 bg-white shadow-brutal-lg">
+      <div className="w-full max-w-md h-16 border-4 border-black dark:border-primary p-2 bg-white dark:bg-slate-800 shadow-brutal-lg dark:shadow-brutal-lg-dark">
         <div
-          className="h-full bg-primary transition-all duration-200 ease-linear border-r-4 border-black"
+          className="h-full bg-primary transition-all duration-200 ease-linear border-r-4 border-black dark:border-primary-dark"
           style={{ width: `${Math.min(progress, 100)}%` }}
         />
       </div>

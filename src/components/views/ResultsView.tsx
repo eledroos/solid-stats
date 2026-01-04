@@ -27,16 +27,24 @@ export function ResultsView({
   cardRef
 }: ResultsViewProps) {
   const [isSharing, setIsSharing] = useState(false);
+  const [isCapturing, setIsCapturing] = useState(false);
 
   const handleShare = async () => {
     if (!cardRef.current) return;
     setIsSharing(true);
+
+    // Enable capture mode to show extra stats
+    setIsCapturing(true);
+
+    // Wait for React to re-render with the extra content
+    await new Promise(resolve => setTimeout(resolve, 100));
 
     try {
       await captureAndShare(cardRef.current, `MySolidStats${selectedYear}.png`);
     } catch (error) {
       alert(error instanceof Error ? error.message : 'Failed to share image');
     } finally {
+      setIsCapturing(false);
       setIsSharing(false);
     }
   };
@@ -51,7 +59,7 @@ export function ResultsView({
             <select
               value={selectedYear}
               onChange={(e) => onYearChange(parseInt(e.target.value, 10))}
-              className="font-bold bg-white px-3 py-1 border-2 border-black shadow-brutal-xs"
+              className="font-bold bg-white dark:bg-slate-800 px-3 py-1 border-2 border-black dark:border-primary shadow-brutal-xs"
             >
               {availableYears.map(year => (
                 <option key={year} value={year}>{year}</option>
@@ -60,119 +68,132 @@ export function ResultsView({
           )}
         </div>
 
-        {/* This div is the "Image" users would share */}
+        {/* This div is the "Image" users would share - 9:16 aspect ratio for export */}
         <div
           ref={cardRef}
           data-share-card
           className="bg-[#F8FAFC] border-4 border-black overflow-hidden shadow-brutal-xl relative flex flex-col text-black group"
-          style={{ width: '420px', minHeight: '746px' }}
+          style={{ width: isCapturing ? '360px' : '420px', height: isCapturing ? '640px' : 'auto' }}
         >
           {/* Header Section */}
-          <div className="bg-black p-5 flex justify-between items-end border-b-4 border-black">
+          <div className="bg-black p-4 flex justify-between items-end border-b-4 border-black">
             <div>
-              <h3 className="text-white text-4xl font-black uppercase tracking-tighter leading-none">
-                Solid<br/><span className="text-primary">Stats</span>
+              <h3 className="text-white text-3xl font-black uppercase tracking-tighter leading-none">
+                Solid<span className="text-primary">Stats</span>
               </h3>
             </div>
             <div className="text-right">
-              <div className="text-primary font-black text-2xl">{stats.year}</div>
-              <div className="text-white text-[10px] uppercase font-bold tracking-widest bg-gray-800 px-1">Unofficial</div>
+              <div className="text-primary font-black text-xl">{stats.year}</div>
+              <div className="text-white text-[8px] uppercase font-bold tracking-widest bg-gray-800 px-1">Unofficial</div>
             </div>
           </div>
 
           {/* Personality Title Badge */}
-          <div className="bg-primary-lighter px-5 py-3 border-b-4 border-black flex items-center gap-3">
-            <span className="text-3xl">{stats.personalityEmoji}</span>
+          <div className="bg-primary-lighter px-4 py-2 border-b-4 border-black flex items-center gap-2">
+            <span className="text-2xl">{stats.personalityEmoji}</span>
             <div>
-              <div className="font-black text-lg uppercase tracking-tight">{stats.personalityTitle}</div>
-              <div className="text-xs text-gray-600">{stats.personalityDescription}</div>
+              <div className="font-black text-sm uppercase tracking-tight">{stats.personalityTitle}</div>
+              <div className="text-[10px] text-gray-600">{stats.personalityDescription}</div>
             </div>
           </div>
 
           {/* MAIN STAT HERO */}
-          <div className="p-5 border-b-4 border-black bg-primary-lighter grid grid-cols-2 gap-2">
-            <div className="col-span-1">
-              <div className="text-[10px] font-bold uppercase mb-1 tracking-widest text-gray-600">Total Classes</div>
-              <div className="text-6xl font-black text-black leading-[0.8] tracking-tight animate-scale-in origin-left">
+          <div className="p-3 border-b-4 border-black bg-primary-lighter grid grid-cols-2 gap-2">
+            <div>
+              <div className="text-[8px] font-bold uppercase mb-0.5 tracking-widest text-gray-600">Total Classes</div>
+              <div className="text-4xl font-black text-black leading-[0.9] tracking-tight">
                 {stats.totalClasses}
               </div>
             </div>
-            <div className="col-span-1 border-l-4 border-black pl-4 flex flex-col justify-center">
-              <div className="text-[10px] font-bold uppercase mb-1 tracking-widest text-gray-600">Minutes Shaking</div>
-              <div className="text-2xl font-black text-primary-dark">
+            <div className="border-l-4 border-black pl-3">
+              <div className="text-[8px] font-bold uppercase mb-0.5 tracking-widest text-gray-600">Minutes</div>
+              <div className="text-xl font-black text-primary-dark">
                 {stats.totalMinutes.toLocaleString()}
               </div>
             </div>
+            {/* Top Studio & Streak - Only shown during screenshot capture */}
+            {isCapturing && (
+              <>
+                <div className="border-t-2 border-black/20 pt-2">
+                  <div className="text-[8px] font-bold uppercase mb-0.5 tracking-widest text-gray-600 flex items-center gap-1">
+                    <MapPin size={10}/> Top Studio
+                  </div>
+                  <div className="text-sm font-black truncate leading-tight">{stats.topLocation}</div>
+                </div>
+                <div className="border-l-4 border-black pl-3 border-t-2 border-black/20 pt-2">
+                  <div className="text-[8px] font-bold uppercase mb-0.5 tracking-widest text-gray-600 flex items-center gap-1">
+                    <Flame size={10}/> Streak
+                  </div>
+                  <div className="text-xl font-black text-red-500">{stats.maxStreak} Days</div>
+                </div>
+              </>
+            )}
           </div>
 
-          {/* INSTRUCTOR LEADERBOARD */}
-          <div className="p-5 border-b-4 border-black">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="bg-black text-white p-1"><User size={14} /></div>
-              <div className="text-xs font-black uppercase tracking-wider">Top Coaches</div>
+          {/* INSTRUCTOR LEADERBOARD - Compact */}
+          <div className="p-3 border-b-4 border-black bg-white">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="bg-black text-white p-0.5"><User size={12} /></div>
+              <div className="text-[10px] font-black uppercase tracking-wider">Top Coaches</div>
             </div>
-            <div className="space-y-3">
-              {stats.sortedInstructors.map(([name, count], idx) => (
+            <div className="space-y-1.5">
+              {stats.sortedInstructors.slice(0, 3).map(([name, count], idx) => (
                 <div
                   key={name}
-                  className="flex items-center justify-between animate-slide-in-up"
-                  style={{ animationDelay: `${idx * 0.1}s` }}
+                  className="flex items-center justify-between"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className={`font-black w-6 h-6 flex items-center justify-center text-sm border-2 border-black shadow-brutal-xs ${idx === 0 ? 'bg-primary text-white' : 'bg-white'}`}>
+                  <div className="flex items-center gap-2">
+                    <div className={`font-black w-5 h-5 flex items-center justify-center text-xs border-2 border-black ${idx === 0 ? 'bg-primary text-white' : 'bg-white'}`}>
                       {idx + 1}
                     </div>
-                    <span className="font-bold text-lg uppercase truncate max-w-[140px] tracking-tight">{name}</span>
+                    <span className="font-bold text-sm uppercase truncate max-w-[120px] tracking-tight">{name}</span>
                   </div>
-                  <div className="text-[10px] font-bold bg-white border-2 border-black px-2 py-0.5 shadow-brutal-xs">
-                    {count} Classes
+                  <div className="text-[9px] font-bold bg-white border-2 border-black px-1.5 py-0.5">
+                    {count}
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* PIE CHART SECTION */}
+          {/* PIE CHART + CLASS TYPES - Side by side */}
           <div className="grid grid-cols-2 border-b-4 border-black flex-grow">
             {/* TIME OF DAY PIE CHART */}
-            <div className="p-4 border-r-4 border-black flex flex-col items-center justify-center bg-white">
-              <div className="text-[10px] font-black uppercase tracking-wider mb-3 self-start w-full border-b-2 border-gray-100 pb-1">
+            <div className="p-3 border-r-4 border-black flex flex-col items-center justify-center bg-white">
+              <div className="text-[9px] font-black uppercase tracking-wider mb-2 self-start w-full border-b border-gray-100 pb-1">
                 Time of Day
               </div>
-              <div className="scale-110 mb-2 animate-spin-enter">
+              <div className="scale-100 mb-1">
                 <PieChart data={stats.timeData} />
               </div>
-              <div className="mt-2 flex flex-wrap justify-center gap-x-3 gap-y-1">
+              <div className="flex flex-wrap justify-center gap-x-2 gap-y-0.5">
                 {stats.timeData.map(d => (
-                  <div key={d.name} className="flex items-center gap-1">
-                    <div className="w-2 h-2 border border-black" style={{ backgroundColor: d.color }} />
-                    <span className="text-[8px] font-bold uppercase">{d.name}</span>
+                  <div key={d.name} className="flex items-center gap-0.5">
+                    <div className="w-1.5 h-1.5 border border-black" style={{ backgroundColor: d.color }} />
+                    <span className="text-[7px] font-bold uppercase">{d.name}</span>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* CLASS TYPES */}
-            <div className="p-4 flex flex-col bg-primary-lightest">
-              <div className="text-[10px] font-black uppercase tracking-wider mb-3 border-b-2 border-gray-200 pb-1">
+            <div className="p-3 flex flex-col bg-primary-lightest">
+              <div className="text-[9px] font-black uppercase tracking-wider mb-2 border-b border-gray-200 pb-1">
                 Format Split
               </div>
-              <div className="space-y-2 flex-grow overflow-y-auto custom-scrollbar">
+              <div className="space-y-1.5 flex-grow overflow-y-auto">
                 {Object.entries(stats.typeCounts)
                   .sort(([, a], [, b]) => b - a)
-                  .map(([type, count], idx) => (
-                    <div
-                      key={type}
-                      className="flex flex-col animate-fade-in-up"
-                      style={{ animationDelay: `${0.3 + idx * 0.1}s` }}
-                    >
-                      <div className="flex justify-between text-[9px] font-bold uppercase mb-0.5">
-                        <span>{type}</span>
+                  .slice(0, 4)
+                  .map(([type, count]) => (
+                    <div key={type} className="flex flex-col">
+                      <div className="flex justify-between text-[8px] font-bold uppercase mb-0.5">
+                        <span className="truncate max-w-[80px]">{type}</span>
                         <span>{Math.round((count / stats.totalClasses) * 100)}%</span>
                       </div>
-                      <div className="w-full h-2 bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] overflow-hidden">
+                      <div className="w-full h-1.5 bg-white border border-black overflow-hidden">
                         <div
-                          className="h-full bg-primary animate-fill-bar"
+                          className="h-full bg-primary"
                           style={{ width: `${(count / stats.totalClasses) * 100}%` }}
                         />
                       </div>
@@ -182,42 +203,36 @@ export function ResultsView({
             </div>
           </div>
 
-          {/* MONTHLY GRAPH */}
-          <div className="p-5 bg-white h-32 relative">
-            <div className="text-[10px] font-black uppercase tracking-wider mb-2 absolute top-3 left-5">
-              Consistency ({stats.year})
-            </div>
-            <div className="flex items-end justify-between h-full pt-6 gap-1">
-              {stats.monthlyActivity.map((count, i) => {
-                const max = Math.max(...stats.monthlyActivity);
-                const height = max > 0 ? (count / max) * 100 : 0;
-                return (
-                  <div key={i} className="flex-1 flex flex-col items-center justify-end h-full group">
-                    {count > 0 && (
+          {/* MONTHLY GRAPH - Only shown in preview, hidden during capture to fit 9:16 */}
+          {!isCapturing && (
+            <div className="p-3 bg-white h-24 relative">
+              <div className="text-[9px] font-black uppercase tracking-wider mb-1">
+                Consistency ({stats.year})
+              </div>
+              <div className="flex items-end justify-between h-[calc(100%-20px)] gap-0.5">
+                {stats.monthlyActivity.map((count, i) => {
+                  const max = Math.max(...stats.monthlyActivity);
+                  const height = max > 0 ? (count / max) * 100 : 0;
+                  return (
+                    <div key={i} className="flex-1 flex flex-col items-center justify-end h-full">
                       <div
-                        className="text-[6px] font-black mb-0.5 animate-fade-in-up"
-                        style={{ animationDelay: `${0.5 + i * 0.05}s` }}
-                      >
-                        {count}
+                        className={`w-full border border-black min-h-[2px] ${count > 0 ? 'bg-primary' : 'bg-gray-100'}`}
+                        style={{ height: `${Math.max(height, 3)}%` }}
+                      />
+                      <div className="text-[5px] font-bold mt-0.5 text-gray-400">
+                        {['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'][i]}
                       </div>
-                    )}
-                    <div
-                      className={`w-full border-2 border-black min-h-[2px] transition-all hover:bg-black ${count > 0 ? 'bg-primary' : 'bg-gray-100'}`}
-                      style={{ height: `${Math.max(height, 2)}%` }}
-                    />
-                    <div className="text-[6px] font-bold mt-1 text-gray-400">
-                      {['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'][i]}
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* FOOTER */}
-          <div className="p-3 bg-black text-white text-center flex flex-col gap-1 border-t-4 border-black mt-auto">
-            <div className="text-[10px] font-bold uppercase tracking-widest">SolidStats.app</div>
-            <div className="text-[8px] text-gray-400 uppercase leading-tight px-4">
+          <div className="p-2 bg-black text-white text-center flex flex-col gap-0.5 border-t-4 border-black mt-auto">
+            <div className="text-[9px] font-bold uppercase tracking-widest">solidstats.bigdreams.info</div>
+            <div className="text-[7px] text-gray-400 uppercase">
               Fan project. Not affiliated with Solidcore.
             </div>
           </div>
@@ -264,26 +279,26 @@ export function ResultsView({
         </div>
 
         {/* Raw Data Receipt */}
-        <ReceiptCard title="Transaction History">
+        <ReceiptCard title="Class Log">
           <div className="overflow-x-auto max-h-[500px] lg:max-h-[600px]">
             <table className="w-full text-left border-collapse">
               <thead className="sticky top-0 z-10">
-                <tr className="border-b-4 border-dashed border-black">
-                  <th className="p-2 lg:p-3 font-black uppercase text-[10px] lg:text-xs bg-white">Date</th>
-                  <th className="p-2 lg:p-3 font-black uppercase text-[10px] lg:text-xs bg-white">Item</th>
-                  <th className="p-2 lg:p-3 font-black uppercase text-[10px] lg:text-xs bg-white">Coach</th>
-                  <th className="p-2 lg:p-3 font-black uppercase text-[10px] lg:text-xs bg-white text-right">Loc</th>
+                <tr className="border-b-4 border-dashed border-black dark:border-primary">
+                  <th className="p-2 lg:p-3 font-black uppercase text-[10px] lg:text-xs bg-white dark:bg-slate-800">Date</th>
+                  <th className="p-2 lg:p-3 font-black uppercase text-[10px] lg:text-xs bg-white dark:bg-slate-800">Item</th>
+                  <th className="p-2 lg:p-3 font-black uppercase text-[10px] lg:text-xs bg-white dark:bg-slate-800">Coach</th>
+                  <th className="p-2 lg:p-3 font-black uppercase text-[10px] lg:text-xs bg-white dark:bg-slate-800 text-right">Loc</th>
                 </tr>
               </thead>
               <tbody className="font-mono text-[10px] lg:text-xs uppercase">
                 {classes.map((row, i) => (
-                  <tr key={i} className="border-b border-dashed border-gray-300 hover:bg-gray-50 transition-colors group">
+                  <tr key={i} className="border-b border-dashed border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors group">
                     <td className="p-2 lg:p-3 font-bold">{row.date.slice(0, 5)}</td>
                     <td className="p-2 lg:p-3 whitespace-nowrap relative">
-                      <span title={row.variant} className="cursor-help border-b border-dotted border-gray-400">
+                      <span title={row.variant} className="cursor-help border-b border-dotted border-gray-400 dark:border-gray-500">
                         {row.type.replace(/\d+$/, '')}
                       </span>
-                      <div className="absolute left-0 top-full mt-1 bg-black text-white text-[8px] lg:text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 whitespace-nowrap shadow-lg">
+                      <div className="absolute left-0 top-full mt-1 bg-black dark:bg-primary text-white text-[8px] lg:text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 whitespace-nowrap shadow-lg">
                         {row.variant}
                       </div>
                     </td>
@@ -292,7 +307,7 @@ export function ResultsView({
                   </tr>
                 ))}
               </tbody>
-              <tfoot className="border-t-4 border-dashed border-black">
+              <tfoot className="border-t-4 border-dashed border-black dark:border-primary">
                 <tr>
                   <td colSpan={4} className="p-3 lg:p-4 text-center text-[10px] lg:text-sm font-bold">
                     TOTAL ITEMS: {stats.totalClasses}
