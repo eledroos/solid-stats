@@ -61,10 +61,12 @@ export async function parsePDF(
 function extractClasses(text: string): ClassData[] {
   const classes: ClassData[] = [];
 
-  // Normalize the special colon character and extra spaces
+  // Normalize the special colon character, broken words, and extra spaces
   const normalizedText = text
-    .replace(/\s*∶\s*/g, ':')  // Replace special colon with spaces to normal colon
-    .replace(/\s+/g, ' ');     // Normalize whitespace
+    .replace(/\s*∶\s*/g, ':')                    // Replace special colon with spaces to normal colon
+    .replace(/PIL\s*ATES/gi, 'PILATES')          // Fix "PIL ATES" → "PILATES"
+    .replace(/STRENGTH\s*TRAINING/gi, 'PILATES') // Treat "STRENGTH TRAINING" as PILATES
+    .replace(/\s+/g, ' ');                       // Normalize whitespace
 
   // Check for key indicators that this is a Mindbody PDF
   const hasMindbody = normalizedText.toLowerCase().includes('mindbody');
