@@ -1,4 +1,4 @@
-import { RefObject, useState } from 'react';
+import { RefObject, useState, useRef } from 'react';
 import { Share2, Loader2, User, MapPin, Flame } from 'lucide-react';
 import { Stats, ClassData } from '../../types';
 import { BrutalButton } from '../ui/BrutalButton';
@@ -28,19 +28,21 @@ export function ResultsView({
 }: ResultsViewProps) {
   const [isSharing, setIsSharing] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
   const handleShare = async () => {
-    if (!cardRef.current) return;
+    if (!wrapperRef.current) return;
     setIsSharing(true);
 
-    // Enable capture mode to show extra stats
+    // Enable capture mode to show extra stats and wrapper background
     setIsCapturing(true);
 
     // Wait for React to re-render with the extra content
     await new Promise(resolve => setTimeout(resolve, 100));
 
     try {
-      await captureAndShare(cardRef.current, `MySolidStats${selectedYear}.png`);
+      // Capture the wrapper which includes padding and background
+      await captureAndShare(wrapperRef.current, `MySolidStats${selectedYear}.png`);
     } catch (error) {
       alert(error instanceof Error ? error.message : 'Failed to share image');
     } finally {
@@ -68,13 +70,19 @@ export function ResultsView({
           )}
         </div>
 
-        {/* This div is the "Image" users would share - 9:16 aspect ratio for export */}
+        {/* Wrapper for screenshot capture - includes padding and background */}
         <div
-          ref={cardRef}
-          data-share-card
-          className="bg-[#F8FAFC] border-4 border-black overflow-hidden shadow-brutal-xl relative flex flex-col text-black group"
-          style={{ width: isCapturing ? '360px' : '420px', height: isCapturing ? '640px' : 'auto' }}
+          ref={wrapperRef}
+          className={isCapturing ? 'p-6 bg-[#F0F4F8] bg-dot-pattern' : ''}
+          style={isCapturing ? { width: '468px' } : undefined}
         >
+          {/* This div is the "Image" users would share */}
+          <div
+            ref={cardRef}
+            data-share-card
+            className="bg-[#F8FAFC] border-4 border-black overflow-hidden shadow-brutal-xl relative flex flex-col text-black group"
+            style={{ width: '420px', height: isCapturing ? '746px' : 'auto' }}
+          >
           {/* Header Section */}
           <div className="bg-black p-4 flex justify-between items-end border-b-4 border-black">
             <div>
@@ -92,8 +100,8 @@ export function ResultsView({
           <div className="bg-primary-lighter px-4 py-2 border-b-4 border-black flex items-center gap-2">
             <span className="text-2xl">{stats.personalityEmoji}</span>
             <div>
-              <div className="font-black text-sm uppercase tracking-tight">{stats.personalityTitle}</div>
-              <div className="text-[10px] text-gray-600">{stats.personalityDescription}</div>
+              <div className="font-black text-sm uppercase tracking-tight whitespace-nowrap">{stats.personalityTitle}</div>
+              <div className="text-[10px] text-gray-600 whitespace-nowrap">{stats.personalityDescription}</div>
             </div>
           </div>
 
@@ -134,7 +142,7 @@ export function ResultsView({
           <div className="p-3 border-b-4 border-black bg-white">
             <div className="flex items-center gap-2 mb-2">
               <div className="bg-black text-white p-0.5"><User size={12} /></div>
-              <div className="text-[10px] font-black uppercase tracking-wider">Top Coaches</div>
+              <div className="text-[10px] font-black uppercase tracking-wider whitespace-nowrap">Top Coaches</div>
             </div>
             <div className="space-y-1.5">
               {stats.sortedInstructors.slice(0, 3).map(([name, count], idx) => (
@@ -146,9 +154,9 @@ export function ResultsView({
                     <div className={`font-black w-5 h-5 flex items-center justify-center text-xs border-2 border-black ${idx === 0 ? 'bg-primary text-white' : 'bg-white'}`}>
                       {idx + 1}
                     </div>
-                    <span className="font-bold text-sm uppercase truncate max-w-[120px] tracking-tight">{name}</span>
+                    <span className="font-bold text-sm uppercase whitespace-nowrap tracking-tight">{name}</span>
                   </div>
-                  <div className="text-[9px] font-bold bg-white border-2 border-black px-1.5 py-0.5">
+                  <div className="text-[9px] font-bold bg-white border-2 border-black px-1.5 py-0.5 whitespace-nowrap">
                     {count}
                   </div>
                 </div>
@@ -159,18 +167,18 @@ export function ResultsView({
           {/* PIE CHART + CLASS TYPES - Side by side */}
           <div className="grid grid-cols-2 border-b-4 border-black flex-grow">
             {/* TIME OF DAY PIE CHART */}
-            <div className="p-3 border-r-4 border-black flex flex-col items-center justify-center bg-white">
-              <div className="text-[9px] font-black uppercase tracking-wider mb-2 self-start w-full border-b border-gray-100 pb-1">
+            <div className="p-3 border-r-4 border-black flex flex-col items-center justify-start bg-white">
+              <div className="text-[9px] font-black uppercase tracking-wider mb-2 self-start w-full border-b border-gray-100 pb-1 whitespace-nowrap">
                 Time of Day
               </div>
               <div className="scale-100 mb-1">
                 <PieChart data={stats.timeData} />
               </div>
-              <div className="flex flex-wrap justify-center gap-x-2 gap-y-0.5">
+              <div className="flex flex-nowrap justify-center gap-x-2">
                 {stats.timeData.map(d => (
                   <div key={d.name} className="flex items-center gap-0.5">
-                    <div className="w-1.5 h-1.5 border border-black" style={{ backgroundColor: d.color }} />
-                    <span className="text-[7px] font-bold uppercase">{d.name}</span>
+                    <div className="w-1.5 h-1.5 border border-black flex-shrink-0" style={{ backgroundColor: d.color }} />
+                    <span className="text-[7px] font-bold uppercase whitespace-nowrap">{d.name}</span>
                   </div>
                 ))}
               </div>
@@ -178,7 +186,7 @@ export function ResultsView({
 
             {/* CLASS TYPES */}
             <div className="p-3 flex flex-col bg-primary-lightest">
-              <div className="text-[9px] font-black uppercase tracking-wider mb-2 border-b border-gray-200 pb-1">
+              <div className="text-[9px] font-black uppercase tracking-wider mb-2 border-b border-gray-200 pb-1 whitespace-nowrap">
                 Format Split
               </div>
               <div className="space-y-1.5 flex-grow overflow-y-auto">
@@ -188,8 +196,8 @@ export function ResultsView({
                   .map(([type, count]) => (
                     <div key={type} className="flex flex-col">
                       <div className="flex justify-between text-[8px] font-bold uppercase mb-0.5">
-                        <span className="truncate max-w-[80px]">{type}</span>
-                        <span>{Math.round((count / stats.totalClasses) * 100)}%</span>
+                        <span className="whitespace-nowrap">{type}</span>
+                        <span className="whitespace-nowrap ml-1">{Math.round((count / stats.totalClasses) * 100)}%</span>
                       </div>
                       <div className="w-full h-1.5 bg-white border border-black overflow-hidden">
                         <div
@@ -235,6 +243,7 @@ export function ResultsView({
             <div className="text-[7px] text-gray-400 uppercase">
               Fan project. Not affiliated with Solidcore.
             </div>
+          </div>
           </div>
         </div>
 
