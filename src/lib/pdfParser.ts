@@ -66,6 +66,7 @@ function extractClasses(text: string): ClassData[] {
     .replace(/\s*∶\s*/g, ':')                    // Replace special colon with spaces to normal colon
     .replace(/PIL\s*ATES/gi, 'PILATES')          // Fix "PIL ATES" → "PILATES"
     .replace(/STRENGTH\s*TRAINING/gi, 'PILATES') // Treat "STRENGTH TRAINING" as PILATES
+    .replace(/(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)PILATES/gi, '$1 PILATES') // Fix stuck day+PILATES
     .replace(/\s+/g, ' ');                       // Normalize whitespace
 
   // Check for key indicators that this is a Mindbody PDF
@@ -95,13 +96,14 @@ function extractClasses(text: string): ClassData[] {
   const classTypePattern = 'Signature50|Focus50|Foundation50|Starter50|Power30|Advanced50|Advanced65';
 
   // Pattern explanation:
-  // - Day number + day of week + month + year
-  // - PILATES + class type + colon + variant (may include playlist name after |)
+  // - Day of week (optional position) + day number + day of week (optional position) + month + year
+  // - PILATES + class type + colon + variant (may include playlist name after |, or "Studio X |")
   // - State code + location (until " w/ ")
   // - Instructor name (until time)
   // - Time + duration
+  const dayOfWeek = '(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)';
   const classPattern = new RegExp(
-    `(\\d{1,2})\\s+(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\\s+(January|February|March|April|May|June|July|August|September|October|November|December),?\\s*(\\d{4})\\s+PILATES\\s+(${classTypePattern}):\\s*(.+?)\\s+(${statePattern}),\\s*(.+?)\\s+w\\/\\s*([A-Za-z][A-Za-z\\s\\-'.…]+?)\\s*(\\d{1,2}:\\d{2}(?:am|pm))\\s*\\((\\d+)\\s*min\\)`,
+    `(?:${dayOfWeek}\\s+)?(\\d{1,2})\\s+(?:${dayOfWeek}\\s+)?(January|February|March|April|May|June|July|August|September|October|November|December),?\\s*(\\d{4})\\s+PILATES\\s+(?:Studio\\s*\\d+\\s*\\|\\s*)?(${classTypePattern}):\\s*(.+?)\\s+(${statePattern}),\\s*(.+?)\\s+w\\/\\s*([A-Za-z][A-Za-z\\s\\-'.…]+?)\\s*(\\d{1,2}:\\d{2}(?:am|pm))\\s*\\((\\d+)\\s*min\\)`,
     'gi'
   );
 
