@@ -122,6 +122,19 @@ function extractClasses(text: string): ClassData[] {
     '$2 $1 $3, $4 PILATES'
   );
 
+  // Handle: "PILATES Signature50: Variant DD DayOfWeek Month, Year" -> "DD DayOfWeek Month, Year PILATES Signature50: Variant"
+  const classTypeNames = 'Signature50|Focus50|Foundation50|Starter50|Power30|Advanced50|Advanced65';
+  normalizedText = normalizedText.replace(
+    new RegExp(`PILATES\\s+((?:Studio\\s*\\d+\\s*\\|\\s*)?(?:Off-Peak\\s+)?(?:${classTypeNames})[:\\|][^,]+?)\\s+(\\d{1,2})\\s+(${dayOfWeekNames})\\s+(${monthNames})\\s*,?\\s*(\\d{4})`, 'gi'),
+    '$2 $3 $4, $5 PILATES $1'
+  );
+
+  // Handle: "PILATES DD DayOfWeek Month, Year Studio X |" -> "DD DayOfWeek Month, Year PILATES Studio X |"
+  normalizedText = normalizedText.replace(
+    new RegExp(`PILATES\\s+(\\d{1,2})\\s+(${dayOfWeekNames})\\s+(${monthNames})\\s*,?\\s*(\\d{4})\\s+(Studio\\s*\\d+\\s*\\|)`, 'gi'),
+    '$1 $2 $3, $4 PILATES $5'
+  );
+
   // Check for key indicators that this is a Mindbody PDF
   const hasMindbody = normalizedText.toLowerCase().includes('mindbody');
   const hasPilates = normalizedText.toLowerCase().includes('pilates');
@@ -165,7 +178,7 @@ function extractClasses(text: string): ClassData[] {
   // Main class pattern - handles standard class types with : separator
   // Also handles Private Class with | separator (with optional whitespace around separator)
   const classPattern = new RegExp(
-    `(?:${dayOfWeek}\\s+)?(\\d{1,2})\\s+(?:${dayOfWeek}\\s+)?(January|February|March|April|May|June|July|August|September|October|November|December)\\s*,?\\s*(\\d{4})\\s+PILATES\\s+(?:Studio\\s*\\d+\\s*\\|\\s*)?${offPeakPrefix}(${classTypePattern})\\s*[:\\|]\\s*(.+?)\\s+(${statePattern})\\s*,\\s*(.+?)\\s+w\\s*/\\s*([A-Za-z][A-Za-z\\s\\-'.…]+?)\\s*(\\d{1,2}:\\d{2}(?:am|pm))${timezonePattern}\\s*\\((\\d+)\\s*min\\s*\\)`,
+    `(?:${dayOfWeek}\\s+)?(\\d{1,2})\\s+(?:${dayOfWeek}\\s+)?(January|February|March|April|May|June|July|August|September|October|November|December)\\s*,?\\s*(\\d{4})\\s+PILATES\\s+(?:Studio\\s*\\d+\\s*\\|\\s*)?${offPeakPrefix}(${classTypePattern})\\s*[:\\|]\\s*(.+?)\\s+(${statePattern})\\s*,\\s*(.+?)\\s+w\\s*/\\s*([A-Za-z][A-Za-z\\s\\-'.…]+?)\\s*(\\d{1,2}:\\d{2}(?:am|pm))${timezonePattern}(?:\\s+(?:BOOK\\s+AGAIN|REVIEW))?\\s*\\((\\d+)\\s*min\\s*\\)`,
     'gi'
   );
 
@@ -315,8 +328,9 @@ function normalizeInstructorName(name: string): string {
   let normalized = collapseSpacedChars(name);
 
   // Remove titles like "- Senior Master", "- Pro Coach", etc.
+  // Match individual title words to handle truncated text like "Senior Ma…"
   normalized = normalized
-    .replace(/\s*-\s*(Senior ?Master|Master|Pro ?Coa|Head ?Coach|Coach|Instructor).*$/i, '')
+    .replace(/\s*-\s*(Senior|Master|Pro|Head|Coach|Instructor).*$/i, '')
     .replace(/\s*….*$/i, '')  // Remove truncation
     .trim();
 
