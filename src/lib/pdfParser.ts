@@ -37,6 +37,15 @@ export async function parsePDF(
 
     console.log('[SolidStats] Text extracted | Length:', fullText.length, 'chars');
 
+    // Detect image-based PDFs (text length too short relative to page count)
+    // A typical Mindbody PDF has ~200-400 chars per class entry, ~5 classes per page
+    const expectedMinChars = totalPages * 500; // Conservative estimate
+    if (fullText.length < expectedMinChars && totalPages > 3) {
+      console.warn('[SolidStats] Warning: PDF appears to be image-based (low text content)');
+      console.warn('[SolidStats] Text length:', fullText.length, 'chars for', totalPages, 'pages');
+      console.warn('[SolidStats] Tip: Re-export your schedule from Mindbody using "Print to PDF" or "Save as PDF" instead of taking screenshots');
+    }
+
     const classes = extractClasses(fullText);
     const availableYears = [...new Set(classes.map(c => c.rawDate.getFullYear()))].sort((a, b) => b - a);
 
@@ -62,8 +71,8 @@ function extractClasses(text: string): ClassData[] {
   const classes: ClassData[] = [];
 
   // Normalize broken text from PDF extraction (some PDFs have spaces between characters)
-  const normalizedText = text
-    .replace(/\s*∶\s*/g, ':')
+  let normalizedText = text
+    .replace(/\s*∶\s*/g, ':')  // Special colon character (U+2236)
     // Fix broken class types
     .replace(/S\s*ign\s*a\s*tur\s*e\s*50/gi, 'Signature50')
     .replace(/F\s*o\s*c\s*us\s*50/gi, 'Focus50')
@@ -104,6 +113,15 @@ function extractClasses(text: string): ClassData[] {
     .replace(/S\s*tu\s*d\s*io/gi, 'Studio')
     .replace(/\s+/g, ' ');
 
+  // Handle alternate date format: "Sunday PILATES 14 December, 2025" -> "14 Sunday December, 2025 PILATES"
+  // This moves the day number before the day-of-week and PILATES after the year
+  const dayOfWeekNames = 'Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday';
+  const monthNames = 'January|February|March|April|May|June|July|August|September|October|November|December';
+  normalizedText = normalizedText.replace(
+    new RegExp(`(${dayOfWeekNames})\\s+PILATES\\s+(\\d{1,2})\\s+(${monthNames})\\s*,?\\s*(\\d{4})`, 'gi'),
+    '$2 $1 $3, $4 PILATES'
+  );
+
   // Check for key indicators that this is a Mindbody PDF
   const hasMindbody = normalizedText.toLowerCase().includes('mindbody');
   const hasPilates = normalizedText.toLowerCase().includes('pilates');
@@ -128,7 +146,8 @@ function extractClasses(text: string): ClassData[] {
   const statePattern = 'AL|AZ|CA|CO|CT|DC|DE|FL|GA|IL|IN|KY|MD|MA|MI|MN|NV|NJ|NY|NC|ND|OK|PA|RI|SD|TN|TX|UT|VA|WA|WI';
 
   // All class types: Signature50, Focus50, Foundation50, Starter50, Power30, Advanced50, Advanced65
-  const classTypePattern = 'Signature50|Focus50|Foundation50|Starter50|Power30|Advanced50|Advanced65';
+  // Also includes Private Class for private sessions
+  const classTypePattern = 'Signature50|Focus50|Foundation50|Starter50|Power30|Advanced50|Advanced65|Private Class';
 
   // Pattern explanation:
   // - Day of week (optional position) + day number + day of week (optional position) + month + year
@@ -137,12 +156,22 @@ function extractClasses(text: string): ClassData[] {
   // - Instructor name (until time)
   // - Time + duration
   const dayOfWeek = '(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)';
+  // Timezone pattern for CST, CDT, EST, EDT, PST, PDT, MST, MDT, etc.
+  const timezonePattern = '(?:\\s*[A-Z]{2,4})?';
+
+  // Optional "Off-Peak" prefix before class type
+  const offPeakPrefix = '(?:Off-Peak\\s+)?';
+
+  // Main class pattern - handles standard class types with : separator
+  // Also handles Private Class with | separator (with optional whitespace around separator)
   const classPattern = new RegExp(
-    `(?:${dayOfWeek}\\s+)?(\\d{1,2})\\s+(?:${dayOfWeek}\\s+)?(January|February|March|April|May|June|July|August|September|October|November|December)\\s*,?\\s*(\\d{4})\\s+PILATES\\s+(?:Studio\\s*\\d+\\s*\\|\\s*)?(${classTypePattern}):\\s*(.+?)\\s+(${statePattern})\\s*,\\s*(.+?)\\s+w\\s*/\\s*([A-Za-z][A-Za-z\\s\\-'.…]+?)\\s*(\\d{1,2}:\\d{2}(?:am|pm))\\s*\\((\\d+)\\s*min\\s*\\)`,
+    `(?:${dayOfWeek}\\s+)?(\\d{1,2})\\s+(?:${dayOfWeek}\\s+)?(January|February|March|April|May|June|July|August|September|October|November|December)\\s*,?\\s*(\\d{4})\\s+PILATES\\s+(?:Studio\\s*\\d+\\s*\\|\\s*)?${offPeakPrefix}(${classTypePattern})\\s*[:\\|]\\s*(.+?)\\s+(${statePattern})\\s*,\\s*(.+?)\\s+w\\s*/\\s*([A-Za-z][A-Za-z\\s\\-'.…]+?)\\s*(\\d{1,2}:\\d{2}(?:am|pm))${timezonePattern}\\s*\\((\\d+)\\s*min\\s*\\)`,
     'gi'
   );
 
   let match;
+  let skippedNonSolidcore = 0;
+
   while ((match = classPattern.exec(normalizedText)) !== null) {
     const day = parseInt(match[1], 10);
     const monthStr = match[2];
@@ -160,6 +189,13 @@ function extractClasses(text: string): ClassData[] {
     // Skip invalid dates
     if (isNaN(rawDate.getTime())) continue;
 
+    // Skip non-Solidcore Pilates classes (e.g., Reformer from other studios)
+    if (isNonSolidcoreClass(variant, location)) {
+      skippedNonSolidcore++;
+      console.log(`[SolidStats] Skipped non-Solidcore class: ${variant} at ${location}`);
+      continue;
+    }
+
     const classData: ClassData = {
       date: formatDate(rawDate),
       time: time,
@@ -171,6 +207,40 @@ function extractClasses(text: string): ClassData[] {
     };
 
     classes.push(classData);
+  }
+
+  if (skippedNonSolidcore > 0) {
+    console.log(`[SolidStats] Filtered out ${skippedNonSolidcore} non-Solidcore Pilates classes`);
+  }
+
+  // Debug: Find potential unmatched classes (lines with date patterns and duration)
+  const potentialClassPattern = /\d{1,2}\s+(?:January|February|March|April|May|June|July|August|September|October|November|December).*?\(\d+\s*min\s*\)/gi;
+  const potentialMatches = normalizedText.match(potentialClassPattern) || [];
+  const unmatchedCount = potentialMatches.length - classes.length;
+
+  if (unmatchedCount > 0) {
+    console.log(`[SolidStats DEBUG] Found ${potentialMatches.length} potential class entries, matched ${classes.length}`);
+    console.log(`[SolidStats DEBUG] ${unmatchedCount} potential entries didn't match. Sampling unmatched:`);
+
+    let debugCount = 0;
+    for (const potential of potentialMatches) {
+      // Check if this potential match is in our results
+      const dayMonthMatch = potential.match(/(\d{1,2})\s+(January|February|March|April|May|June|July|August|September|October|November|December)/i);
+      if (dayMonthMatch) {
+        const sig = `${dayMonthMatch[1]} ${dayMonthMatch[2]}`;
+        // Count how many times this date appears in matches vs potentials
+        const matchCount = classes.filter(c => {
+          const month = c.rawDate.toLocaleString('en-US', { month: 'long' });
+          return `${c.rawDate.getDate()} ${month}` === sig;
+        }).length;
+        const potentialCount = potentialMatches.filter(p => p.includes(sig)).length;
+
+        if (potentialCount > matchCount && debugCount < 5) {
+          console.log(`[SolidStats DEBUG] Unmatched: ${potential.substring(0, 200)}...`);
+          debugCount++;
+        }
+      }
+    }
   }
 
   // Sort by date (most recent first)
@@ -197,7 +267,32 @@ function normalizeClassType(type: string): ClassType {
   if (lower.includes('focus')) return 'Focus50';
   if (lower.includes('foundation')) return 'Foundation50';
   if (lower.includes('starter')) return 'Starter50';
+  if (lower.includes('private')) return 'Signature50'; // Treat private classes as Signature50
   return 'Signature50';
+}
+
+// Check if a class entry is a non-Solidcore Pilates class (e.g., Reformer classes from other studios)
+function isNonSolidcoreClass(variant: string, location: string): boolean {
+  const variantLower = variant.toLowerCase();
+  const locationLower = location.toLowerCase();
+
+  // Non-Solidcore indicators
+  const nonSolidcorePatterns = [
+    'reformer',           // Pilates Reformer classes from other studios
+    'district pilates',   // District Pilates studio
+    'reformation',        // Reformation studio
+    'pilates level',      // "Pilates Reformer (Level 1.5)"
+    'intermediate',       // "Reformer - Intermediate"
+    'beginner',           // "Reformer - Beginner"
+  ];
+
+  for (const pattern of nonSolidcorePatterns) {
+    if (variantLower.includes(pattern) || locationLower.includes(pattern)) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 // Fix text with spaces between characters (e.g., "J or da n" -> "Jordan")
