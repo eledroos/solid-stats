@@ -37,6 +37,23 @@ export async function parsePDF(
 
     console.log('[SolidStats] Text extracted | Length:', fullText.length, 'chars');
 
+    // Detect PDFs with no extractable text
+    // This happens when "Microsoft: Print To PDF" or similar tools render text as graphics
+    if (fullText.trim().length < 100 && totalPages > 1) {
+      console.error('[SolidStats] Error: PDF has no extractable text');
+      console.error('[SolidStats] This PDF was likely created using "Microsoft: Print To PDF"');
+      console.error('[SolidStats] which renders text as images instead of text.');
+      throw new Error(
+        'This PDF has no extractable text. It was likely created using "Microsoft: Print To PDF" which renders text as images.\n\n' +
+        'To fix this, please re-export your schedule:\n' +
+        '1. Open your Mindbody schedule page in Chrome, Firefox, or Safari\n' +
+        '2. Press Ctrl+P (or Cmd+P on Mac) to print\n' +
+        '3. Select "Save as PDF" or "Print to PDF" as the destination\n' +
+        '4. Save and upload the new PDF\n\n' +
+        'Note: Avoid using Windows "Print To PDF" - use your browser\'s built-in PDF option instead.'
+      );
+    }
+
     // Detect image-based PDFs (text length too short relative to page count)
     // A typical Mindbody PDF has ~200-400 chars per class entry, ~5 classes per page
     const expectedMinChars = totalPages * 500; // Conservative estimate
@@ -134,6 +151,44 @@ function extractClasses(text: string): ClassData[] {
   normalizedText = normalizedText.replace(
     new RegExp(`PILATES\\s+(\\d{1,2})\\s+(${dayOfWeekNames})\\s+(${monthNames})\\s*,?\\s*(\\d{4})\\s+(Studio\\s*\\d+\\s*\\|)`, 'gi'),
     '$1 $2 $3, $4 PILATES $5'
+  );
+
+  // Handle web page PDF format where time/duration comes before PILATES
+  // "04 Sunday January, 2026 5:30pm (50 min) PILATES Signature50: Full Body TX, Location w/ Instructor"
+  // -> "04 Sunday January, 2026 PILATES Signature50: Full Body TX, Location w/ Instructor 5:30pm (50 min)"
+  // Note: Also handles STRENGTH TRAINING (already normalized to PILATES above) and optional timezone
+  normalizedText = normalizedText.replace(
+    new RegExp(
+      // Date: "04 Sunday January, 2026" or "04 Sunday January 2026"
+      `(\\d{1,2}\\s+(?:${dayOfWeekNames})\\s+(?:${monthNames})\\s*,?\\s*\\d{4})\\s+` +
+      // Time with optional timezone: "5:30pm" or "9:00am EDT"
+      `(\\d{1,2}:\\d{2}(?:am|pm)(?:\\s*[A-Z]{2,4})?)\\s*` +
+      // Duration: "(50 min)"
+      `\\((\\d+)\\s*min\\s*\\)\\s+` +
+      // Class info: PILATES [prefix] ClassType: Variant State, Location w/ Instructor
+      `(PILATES\\s+(?:Studio\\s*\\d+\\s*\\|\\s*)?(?:Off-Peak\\s+)?(?:Grand\\s+Opening\\s+)?(?:${classTypeNames})[:\\|].+?w\\s*/\\s*[A-Za-z][A-Za-z\\s\\-''''.…#]+?)` +
+      // Lookahead: stop before BOOK, REVIEW, next date, or end
+      `(?=\\s*(?:BOOK|REVIEW|\\d{1,2}\\s+(?:${dayOfWeekNames})|$))`,
+      'gi'
+    ),
+    '$1 $4 $2 ($3 min)'
+  );
+
+  // Also handle when BOOK AGAIN appears between time and duration (row-by-row extraction)
+  // "04 Sunday January, 2026 PILATES ... Instructor 5:30pm BOOK AGAIN (50 min)"
+  // This is already handled by the main pattern, but we need to handle the reversed case too:
+  // "04 Sunday January, 2026 5:30pm BOOK AGAIN (50 min) PILATES ..."
+  normalizedText = normalizedText.replace(
+    new RegExp(
+      `(\\d{1,2}\\s+(?:${dayOfWeekNames})\\s+(?:${monthNames})\\s*,?\\s*\\d{4})\\s+` +
+      `(\\d{1,2}:\\d{2}(?:am|pm)(?:\\s*[A-Z]{2,4})?)\\s+` +
+      `BOOK\\s+AGAIN\\s+` +
+      `\\((\\d+)\\s*min\\s*\\)\\s+` +
+      `(PILATES\\s+(?:Studio\\s*\\d+\\s*\\|\\s*)?(?:Off-Peak\\s+)?(?:Grand\\s+Opening\\s+)?(?:${classTypeNames})[:\\|].+?w\\s*/\\s*[A-Za-z][A-Za-z\\s\\-''''.…#]+?)` +
+      `(?=\\s*(?:BOOK|REVIEW|\\d{1,2}\\s+(?:${dayOfWeekNames})|$))`,
+      'gi'
+    ),
+    '$1 $4 $2 ($3 min)'
   );
 
   // Check for key indicators that this is a Mindbody PDF
