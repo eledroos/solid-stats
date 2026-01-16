@@ -129,6 +129,18 @@ function extractClasses(text: string): ClassData[] {
     .replace(/STRENGTH\s*TRAINING/gi, 'PILATES')
     .replace(/(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)PILATES/gi, '$1 PILATES')
     .replace(/S\s*tu\s*d\s*io/gi, 'Studio')
+    // Fix broken "Off-Peak" prefix
+    .replace(/O\s*ff\s*-?\s*P\s*e\s*a\s*k/gi, 'Off-Peak')
+    // Fix broken instructor title words (appear between instructor name and time)
+    .replace(/S\s*e\s*n\s*i\s*o\s*r/gi, 'Senior')
+    .replace(/M\s*a\s*s\s*t\s*e\s*r/gi, 'Master')
+    .replace(/C\s*o\s*a\s*c\s*h/gi, 'Coach')
+    .replace(/I\s*n\s*s\s*t\s*r\s*u\s*c\s*t\s*o\s*r/gi, 'Instructor')
+    // Fix broken BOOK AGAIN and REVIEW
+    .replace(/B\s*O\s*O\s*K\s*A\s*G\s*A\s*I\s*N/gi, 'BOOK AGAIN')
+    .replace(/R\s*E\s*V\s*I\s*E\s*W/gi, 'REVIEW')
+    // Remove emoji characters that appear between class info (UI icons from web page)
+    .replace(/[\u{1F300}-\u{1F9FF}]/gu, ' ')
     .replace(/\s+/g, ' ');
 
   // Handle alternate date format: "Sunday PILATES 14 December, 2025" -> "14 Sunday December, 2025 PILATES"
@@ -233,8 +245,9 @@ function extractClasses(text: string): ClassData[] {
 
   // Main class pattern - handles standard class types with : separator
   // Also handles Private Class with | separator (with optional whitespace around separator)
+  // Updated to allow optional title suffixes (e.g., "- Senior Master…") and BOOK AGAIN/REVIEW before time
   const classPattern = new RegExp(
-    `(?:${dayOfWeek}\\s+)?(\\d{1,2})\\s+(?:${dayOfWeek}\\s+)?(January|February|March|April|May|June|July|August|September|October|November|December)\\s*,?\\s*(\\d{4})\\s+PILATES\\s+(?:Studio\\s*\\d+\\s*\\|\\s*)?${offPeakPrefix}(${classTypePattern})\\s*[:\\|]\\s*(.+?)\\s+(${statePattern})\\s*,\\s*(.+?)\\s+w\\s*/\\s*([A-Za-z][A-Za-z\\s\\-'.…]+?)\\s*(\\d{1,2}:\\d{2}(?:am|pm))${timezonePattern}(?:\\s+(?:BOOK\\s+AGAIN|REVIEW))?\\s*\\((\\d+)\\s*min\\s*\\)`,
+    `(?:${dayOfWeek}\\s+)?(\\d{1,2})\\s+(?:${dayOfWeek}\\s+)?(January|February|March|April|May|June|July|August|September|October|November|December)\\s*,?\\s*(\\d{4})\\s+PILATES\\s+(?:Studio\\s*\\d+\\s*\\|\\s*)?${offPeakPrefix}(${classTypePattern})\\s*[:\\|]\\s*(.+?)\\s+(${statePattern})\\s*,\\s*(.+?)\\s+w\\s*/\\s*([A-Za-z][A-Za-z\\s\\-'.…]+?)(?:\\s*-\\s*(?:Senior\\s+)?(?:Master|Pro|Head)\\s*(?:Coach|Instructor)?[\\s…]*)?(?:\\s+(?:BOOK\\s+AGAIN|REVIEW))?\\s*(\\d{1,2}:\\d{2}(?:am|pm))${timezonePattern}(?:\\s+(?:BOOK\\s+AGAIN|REVIEW))?\\s*\\((\\d+)\\s*min\\s*\\)`,
     'gi'
   );
 
