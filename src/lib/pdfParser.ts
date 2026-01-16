@@ -86,6 +86,7 @@ function extractClasses(text: string): ClassData[] {
     .replace(/F\s*e\s*b\s*r\s*u\s*a\s*r\s*y/gi, 'February')
     .replace(/M\s*a\s*r\s*c\s*h/gi, 'March')
     .replace(/A\s*p\s*r\s*i\s*l/gi, 'April')
+    .replace(/M\s*a\s*y/gi, 'May')
     .replace(/J\s*u\s*n\s*e/gi, 'June')
     .replace(/J\s*u\s*l\s*y/gi, 'July')
     .replace(/A\s*u\s*g\s*u\s*s\s*t/gi, 'August')
