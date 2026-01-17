@@ -45,3 +45,19 @@ export interface ParseResult {
   classes: ClassData[];
   availableYears: number[];
 }
+
+// Muscle group types
+export type LowerMuscle = 'Inner thighs' | 'Center glutes' | 'Outer glutes' | 'Hamstrings' | 'Leg wrap';
+export type UpperMuscle = 'Biceps' | 'Back' | 'Triceps' | 'Shoulders' | 'Chest' | 'Arm wrap';
+
+export interface MuscleGroupStats {
+  lowerBodyCounts: Record<LowerMuscle, number>;
+  upperBodyCounts: Record<UpperMuscle, number>;
+  pushCount: number;
+  pullCount: number;
+  topLower: LowerMuscle;
+  topUpper: UpperMuscle;
+  neglectedLower: LowerMuscle;
+  neglectedUpper: UpperMuscle;
+  classesWithData: number;
+}

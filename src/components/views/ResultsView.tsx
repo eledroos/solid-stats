@@ -1,14 +1,18 @@
 import { RefObject, useState, useRef } from 'react';
-import { Share2, Loader2, User, MapPin, Flame } from 'lucide-react';
-import { Stats, ClassData } from '../../types';
+import { Share2, Loader2, User, MapPin, Flame, Activity, Target } from 'lucide-react';
+import { Stats, ClassData, MuscleGroupStats } from '../../types';
 import { BrutalButton } from '../ui/BrutalButton';
 import { BrutalCard } from '../ui/BrutalCard';
 import { ReceiptCard } from '../ui/ReceiptCard';
 import { PieChart } from '../ui/PieChart';
+import { MuscleGroupsCard } from './MuscleGroupsCard';
 import { captureAndShare } from '../../lib/shareUtils';
+
+type CardView = 'stats' | 'muscles';
 
 interface ResultsViewProps {
   stats: Stats;
+  muscleStats: MuscleGroupStats | null;
   classes: ClassData[];
   availableYears: number[];
   selectedYear: number;
@@ -19,6 +23,7 @@ interface ResultsViewProps {
 
 export function ResultsView({
   stats,
+  muscleStats,
   classes,
   availableYears,
   selectedYear,
@@ -28,7 +33,9 @@ export function ResultsView({
 }: ResultsViewProps) {
   const [isSharing, setIsSharing] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
+  const [activeCard, setActiveCard] = useState<CardView>('stats');
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const muscleCardRef = useRef<HTMLDivElement>(null);
 
   const handleShare = async () => {
     if (!wrapperRef.current) return;
@@ -40,9 +47,13 @@ export function ResultsView({
     // Wait for React to re-render with the extra content
     await new Promise(resolve => setTimeout(resolve, 100));
 
+    const filename = activeCard === 'stats'
+      ? `MySolidStats${selectedYear}.png`
+      : `MyMuscleStats${selectedYear}.png`;
+
     try {
       // Capture the wrapper which includes padding and background
-      await captureAndShare(wrapperRef.current, `MySolidStats${selectedYear}.png`);
+      await captureAndShare(wrapperRef.current, filename);
     } catch (error) {
       alert(error instanceof Error ? error.message : 'Failed to share image');
     } finally {
@@ -70,13 +81,50 @@ export function ResultsView({
           )}
         </div>
 
+        {/* Card Type Toggle */}
+        {muscleStats && muscleStats.classesWithData > 0 && (
+          <div className="flex mb-4 border-4 border-black dark:border-primary shadow-brutal-sm dark:shadow-brutal-dark">
+            <button
+              onClick={() => setActiveCard('stats')}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 font-black uppercase text-sm transition-colors ${
+                activeCard === 'stats'
+                  ? 'bg-primary text-white'
+                  : 'bg-white dark:bg-slate-800 text-gray-500 hover:bg-gray-50 dark:hover:bg-slate-700'
+              }`}
+            >
+              <Activity size={16} />
+              Stats
+            </button>
+            <button
+              onClick={() => setActiveCard('muscles')}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 font-black uppercase text-sm transition-colors border-l-4 border-black dark:border-primary ${
+                activeCard === 'muscles'
+                  ? 'bg-primary text-white'
+                  : 'bg-white dark:bg-slate-800 text-gray-500 hover:bg-gray-50 dark:hover:bg-slate-700'
+              }`}
+            >
+              <Target size={16} />
+              Muscles
+            </button>
+          </div>
+        )}
+
         {/* Wrapper for screenshot capture - includes padding and background */}
         <div
           ref={wrapperRef}
           className={isCapturing ? 'p-6 bg-[#F0F4F8] bg-dot-pattern' : ''}
           style={isCapturing ? { width: '468px' } : undefined}
         >
-          {/* This div is the "Image" users would share */}
+          {/* Conditionally render Stats card or Muscle card */}
+          {activeCard === 'muscles' && muscleStats && muscleStats.classesWithData > 0 ? (
+            <MuscleGroupsCard
+              stats={muscleStats}
+              year={stats.year}
+              cardRef={muscleCardRef}
+              isCapturing={isCapturing}
+            />
+          ) : (
+          /* Stats Card - the original "Image" users would share */
           <div
             ref={cardRef}
             data-share-card
@@ -243,6 +291,7 @@ export function ResultsView({
             </div>
           </div>
           </div>
+          )}
         </div>
 
         <div className="flex gap-2 mt-6">

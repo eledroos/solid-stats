@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Shield, Github, ExternalLink, Sun, Moon } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { AppView, ClassData, Stats, ParseResult } from './types';
+import { AppView, ClassData, Stats, ParseResult, MuscleGroupStats } from './types';
 import { Modal } from './components/ui/Modal';
 import { LandingView } from './components/views/LandingView';
 import { ProcessingView } from './components/views/ProcessingView';
@@ -9,11 +9,13 @@ import { ResultsView } from './components/views/ResultsView';
 import { ErrorView } from './components/views/ErrorView';
 import { parsePDF } from './lib/pdfParser';
 import { calculateStats } from './lib/statsCalculator';
+import { calculateMuscleGroupStats } from './lib/muscleGroupStats';
 
 function App() {
   const [view, setView] = useState<AppView>('landing');
   const [progress, setProgress] = useState(0);
   const [stats, setStats] = useState<Stats | null>(null);
+  const [muscleStats, setMuscleStats] = useState<MuscleGroupStats | null>(null);
   const [allClasses, setAllClasses] = useState<ClassData[]>([]);
   const [filteredClasses, setFilteredClasses] = useState<ClassData[]>([]);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
@@ -83,6 +85,10 @@ function App() {
 
       const calculatedStats = calculateStats(filtered, defaultYear);
       setStats(calculatedStats);
+
+      // Calculate muscle group stats
+      const calculatedMuscleStats = calculateMuscleGroupStats(filtered);
+      setMuscleStats(calculatedMuscleStats);
       setProgress(100);
 
       setView('results');
@@ -104,6 +110,10 @@ function App() {
     if (filtered.length > 0) {
       const calculatedStats = calculateStats(filtered, year);
       setStats(calculatedStats);
+
+      // Recalculate muscle group stats for new year
+      const calculatedMuscleStats = calculateMuscleGroupStats(filtered);
+      setMuscleStats(calculatedMuscleStats);
     }
   };
 
@@ -111,6 +121,7 @@ function App() {
     setView('landing');
     setProgress(0);
     setStats(null);
+    setMuscleStats(null);
     setAllClasses([]);
     setFilteredClasses([]);
     setAvailableYears([]);
@@ -152,6 +163,7 @@ function App() {
         {view === 'results' && stats && (
           <ResultsView
             stats={stats}
+            muscleStats={muscleStats}
             classes={filteredClasses}
             availableYears={availableYears}
             selectedYear={selectedYear}
