@@ -1,4 +1,4 @@
-import { ClassData, MuscleGroupStats, LowerMuscle, UpperMuscle } from '../types';
+import { ClassData, MuscleGroupStats, MonthlyMuscleStats, LowerMuscle, UpperMuscle } from '../types';
 import { getMuscleGroupsFromString, LOWER_MUSCLES, UPPER_MUSCLES } from '../data/muscleGroupCalendar';
 
 /**
@@ -51,6 +51,9 @@ export function calculateMuscleGroupStats(classes: ClassData[]): MuscleGroupStat
   const neglectedLower = findNeglectedMuscle(lowerBodyCounts, LOWER_MUSCLES);
   const neglectedUpper = findNeglectedMuscle(upperBodyCounts, UPPER_MUSCLES);
 
+  // Calculate monthly stats
+  const monthlyStats = calculateMonthlyStats(classes);
+
   return {
     lowerBodyCounts,
     upperBodyCounts,
@@ -61,7 +64,72 @@ export function calculateMuscleGroupStats(classes: ClassData[]): MuscleGroupStat
     neglectedLower,
     neglectedUpper,
     classesWithData,
+    monthlyStats,
   };
+}
+
+/**
+ * Calculate muscle group stats broken down by month
+ */
+function calculateMonthlyStats(classes: ClassData[]): MonthlyMuscleStats[] {
+  const monthlyStats: MonthlyMuscleStats[] = [];
+
+  for (let month = 0; month < 12; month++) {
+    const monthClasses = classes.filter(c => c.rawDate.getMonth() === month);
+
+    if (monthClasses.length === 0) continue;
+
+    // Initialize counts for this month
+    const lowerBodyCounts: Record<LowerMuscle, number> = {
+      'Inner thighs': 0,
+      'Center glutes': 0,
+      'Outer glutes': 0,
+      'Hamstrings': 0,
+      'Leg wrap': 0,
+    };
+
+    const upperBodyCounts: Record<UpperMuscle, number> = {
+      'Biceps': 0,
+      'Back': 0,
+      'Triceps': 0,
+      'Shoulders': 0,
+      'Chest': 0,
+      'Arm wrap': 0,
+    };
+
+    let pushCount = 0;
+    let pullCount = 0;
+    let classCount = 0;
+
+    for (const classData of monthClasses) {
+      const muscleData = getMuscleGroupsFromString(classData.date);
+
+      if (muscleData) {
+        classCount++;
+        lowerBodyCounts[muscleData.lower]++;
+        upperBodyCounts[muscleData.upper]++;
+
+        if (muscleData.monthlyUpperFocus === 'Push muscles') {
+          pushCount++;
+        } else {
+          pullCount++;
+        }
+      }
+    }
+
+    if (classCount > 0) {
+      monthlyStats.push({
+        month,
+        lowerBodyCounts,
+        upperBodyCounts,
+        pushCount,
+        pullCount,
+        classCount,
+      });
+    }
+  }
+
+  return monthlyStats;
 }
 
 function findTopMuscle<T extends string>(counts: Record<T, number>, muscles: readonly T[]): T {

@@ -50,6 +50,15 @@ export interface ParseResult {
 export type LowerMuscle = 'Inner thighs' | 'Center glutes' | 'Outer glutes' | 'Hamstrings' | 'Leg wrap';
 export type UpperMuscle = 'Biceps' | 'Back' | 'Triceps' | 'Shoulders' | 'Chest' | 'Arm wrap';
 
+export interface MonthlyMuscleStats {
+  month: number; // 0-11
+  lowerBodyCounts: Record<LowerMuscle, number>;
+  upperBodyCounts: Record<UpperMuscle, number>;
+  pushCount: number;
+  pullCount: number;
+  classCount: number;
+}
+
 export interface MuscleGroupStats {
   lowerBodyCounts: Record<LowerMuscle, number>;
   upperBodyCounts: Record<UpperMuscle, number>;
@@ -60,4 +69,5 @@ export interface MuscleGroupStats {
   neglectedLower: LowerMuscle;
   neglectedUpper: UpperMuscle;
   classesWithData: number;
+  monthlyStats: MonthlyMuscleStats[];
 }
